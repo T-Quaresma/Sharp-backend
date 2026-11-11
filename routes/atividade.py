@@ -1,6 +1,6 @@
 from flask_openapi3 import APIBlueprint
 from schemas.atividade import Activity_Creation, Activity_Delete, Activity_Search, Activity_Update
-from services.atividade import create_activity, search_activity, delete_activity, update_activity
+from services.atividade import create_activity, search_activity, delete_activity, update_activity, list_shared_activities
 from tags import activity_tag
 from flask import g
 from utils.auth import require_auth
@@ -53,4 +53,19 @@ def updating_activity(body: Activity_Update):
         return {"Message": "Activity could not be updated."}, 400
 
 
-    
+
+@bp_activity.get('/activities/shared', tags=[activity_tag])
+@require_auth
+def shared_activities():
+    try:
+        user_id = g.user["usuId"]
+
+        result, status = list_shared_activities(user_id)
+
+        return result, status
+
+    except Exception as e:
+        print(f"Error listing shared activities: {str(e)}")
+        return {
+            "Message": "Error listing shared activities."
+        }, 500

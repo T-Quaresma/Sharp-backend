@@ -1,5 +1,5 @@
 from database import db
-from models import Atividade, Grupo
+from models import Atividade, Grupo, Agendamento, ParticipantesAtiv
 
 def create_activity(data, user_id):
     if data.group_id is not None:
@@ -117,3 +117,61 @@ def update_activity(data, user_id):
     return {
         "Message": "Activity updated successfully!"
     }, 200
+
+def list_shared_activities(user_id):
+    rows = db.session.execute(
+        db.select(Atividade, Agendamento)
+        .join(
+            Agendamento,
+            Agendamento.ativId == Atividade.ativId
+        )
+        .join(
+            ParticipantesAtiv,
+            ParticipantesAtiv.agenId == Agendamento.agenId
+        )
+        .where(
+            ParticipantesAtiv.usuId == user_id,
+            ParticipantesAtiv.status == "accepted"
+        )
+        .order_by(Atividade.ativId, Agendamento.agenId)
+    ).all()
+
+    shared_activities = {}
+
+    for activity, schedule in rows:
+        if activity.ativId not in shared_activities:
+            shared_activities[activity.ativId] = {
+                "ativId": activity.ativId,
+                "nomeAtiv": activity.nomeAtiv,
+                "descAtiv": activity.descAtiv,
+                "imagem": activity.imagem,
+                "grupoId": activity.grupoId,
+                "read_only": True,
+                "schedules": []
+            }
+
+        shared_activities[activity.ativId]["schedules"].append({
+            "agenId": schedule.agenId,
+            "nomeAgen": schedule.nomeAgen,
+            "descAgen": schedule.descAgen,
+            "local": schedule.local,
+            "data_inicio": (
+                schedule.data_inicio.isoformat()
+                if schedule.data_inicio else None
+            ),
+            "data_fim": (
+                schedule.data_fim.isoformat()
+                if schedule.data_fim else None
+            ),
+            "hora_inicio": (
+                schedule.hora_inicio.isoformat()
+                if schedule.hora_inicio else None
+            ),
+            "hora_fim": (
+                schedule.hora_fim.isoformat()
+                if schedule.hora_fim else None
+            ),
+            "frequencia": schedule.frequencia
+        })
+
+    return list(shared_activities.values()), 200

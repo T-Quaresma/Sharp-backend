@@ -1,20 +1,29 @@
 from database import db
 from models import Usuario
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.exc import IntegrityError
 
 # Creating User and adding it to the database.
 def user_creation(data):
-    existing_user = db.session.execute(db.select(Usuario).where(Usuario.email == data.email)).scalar_one_or_none()
+    existing_user = db.session.execute(db.select(Usuario).where(Usuario.identificador == data.identificador)).scalar_one_or_none()
     if existing_user is not None:
+        return {"Message": "Identificator already exists."}, 409
+    existing_email = db.session.execute(db.select(Usuario).where(Usuario.email == data.email)).scalar_one_or_none()
+    if existing_email is not None:
         return {"Message": "Email already exists."}, 409
     hashed_password = generate_password_hash(data.senha)
     new_user = Usuario(
         nomeUsu = data.name,
         email = data.email,
-        senha = hashed_password
+        senha = hashed_password,
+        identificador = data.identificador
     )
-    db.session.add(new_user)
-    db.session.commit()
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return {"Message": "email or identificador already exists."}, 409
     return {"Message": "User created successfully!"}, 201
 
 # Searching for a specific user.

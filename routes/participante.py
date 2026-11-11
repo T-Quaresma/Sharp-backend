@@ -1,9 +1,10 @@
 from flask_openapi3 import APIBlueprint
-from schemas.participante import Participant_Addition, Participant_Delete, Participant_Search
-from services.participante import add_participant, delete_participant, select_participant
+from schemas.participante import Participant_Addition, Participant_Delete, Participant_Search, Participant_Invitation_Response, Participant_Leave
+from services.participante import add_participant, delete_participant, list_received_invitations, select_participant, respond_to_invitation, leave_schedule
 from tags import participant_tag
 from flask import g
 from utils.auth import require_auth
+
 
 bp_participant = APIBlueprint('participant', __name__)
 
@@ -39,4 +40,51 @@ def participant_deletion(body: Participant_Delete):
     except Exception as e:
         print(f"Error: {str(e)}")
         return {"Message": "Error deleting participant."}, 400
+
+@bp_participant.patch('/participant/invitation', tags=[participant_tag])
+@require_auth
+def participant_invitation_response(body: Participant_Invitation_Response):
+    try:
+        user_id = g.user["usuId"]
+        result, status = respond_to_invitation(body, user_id)
+        return result, status
+    except Exception as e:
+        print(f"Error responding to invitation: {str(e)}")
+        return {
+            "Message": "Error responding to invitation."
+        }, 500
+
+
+@bp_participant.get('/participant/invitations', tags=[participant_tag])
+@require_auth
+def received_invitations():
+    try:
+        user_id = g.user["usuId"]
+
+        result, status = list_received_invitations(user_id)
+
+        return result, status
+
+    except Exception as e:
+        print(f"Error listing invitations: {str(e)}")
+        return {
+            "Message": "Error listing invitations."
+        }, 500
+
+
+@bp_participant.delete('/participant/leave', tags=[participant_tag])
+@require_auth
+def participant_leave(body: Participant_Leave):
+    try:
+        user_id = g.user["usuId"]
+
+        result, status = leave_schedule(body, user_id)
+
+        return result, status
+
+    except Exception as e:
+        print(f"Error leaving schedule: {str(e)}")
+        return {
+            "Message": "Error leaving schedule."
+        }, 500
 

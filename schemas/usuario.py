@@ -1,10 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # para a criação de um usuario, ele tera que cadastrar um nome, uma senha e um email a essa conta.
 class User_Creation(BaseModel):
     name: str
     senha: str
     email: str
+    identificador: str = Field(min_length=3, max_length=30, pattern=r"^[a-z0-9_]+$")  # O identificador deve ter entre 3 e 30 caracteres, apenas letras minúsculas, números e underscores.
 
 # para procurar um usuario o usuario tera que escrever o nome desse usuario aparecendo todas as opçoes disponiveis, assim como 
 #procurar um usuario no whatsapp.

@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Literal
 
 # ao adicionar um participante o usuario tera que clicar no agendamento especifico, selecionando o id do agendamento ao fazer isso,
 # e clicar em adicionar participante, então clicar no participante da lista de pessoas na friend list dela quem ele quer adicionar.
@@ -13,3 +14,10 @@ class Participant_Search(BaseModel):
 # Para deletar um participante o usuario ira clicar no participante especifico que ele quer e clicar em remover.
 class Participant_Delete(BaseModel):
     id: int
+
+class Participant_Invitation_Response(BaseModel):
+    id: int
+    status: Literal["accepted", "declined"]
+
+class Participant_Leave(BaseModel):
+    schedule_id: int

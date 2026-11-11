@@ -1,5 +1,5 @@
 from database import db
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import time, date
 from typing import List
@@ -10,6 +10,7 @@ class Usuario(db.Model):
     email: Mapped[str] = mapped_column(unique=True)
     senha: Mapped[str] = mapped_column(nullable=False)
     nomeUsu: Mapped[str] = mapped_column(nullable=False)
+    identificador: Mapped[str] = mapped_column(db.String(30), unique=True, nullable=False)
     participantesAtiv: Mapped[List["ParticipantesAtiv"]] = relationship(back_populates="usuario")
 
 class Grupo(db.Model):
@@ -27,7 +28,7 @@ class Atividade(db.Model):
     descAtiv: Mapped[str]
     ativId: Mapped[int] = mapped_column(primary_key=True)
     criadorId: Mapped[int] = mapped_column(ForeignKey("usuarios.usuId"))
-    agendamento: Mapped[List["Agendamento"]] = relationship("Agendamento", back_populates="atividade", cascade="all, delete-orphan")
+    agendamento: Mapped[List["Agendamento"]] = relationship("Agendamento", back_populates="atividade", cascade="all, delete-orphan") 
     imagem: Mapped[str] = mapped_column(nullable=True)
     grupoId: Mapped[int] = mapped_column(ForeignKey("grupos.grupoId"), nullable=True)
     grupo: Mapped["Grupo"] = relationship("Grupo", back_populates="atividades")
@@ -55,4 +56,5 @@ class ParticipantesAtiv(db.Model):
     agenId: Mapped[int] = mapped_column(ForeignKey("agendamentos.agenId"))
     usuario: Mapped["Usuario"] = relationship("Usuario", back_populates="participantesAtiv")
     agendamento: Mapped["Agendamento"] = relationship("Agendamento", back_populates="participantes")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
 
