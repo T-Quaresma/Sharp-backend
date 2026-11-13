@@ -13,8 +13,9 @@ def register_user(body: User_Creation):
     try:
         result, status = user_creation(body)
         return result, status
-    except Exception as e:
-        print(f"Error: {str(e)}"), 400
+    except Exception:
+        import traceback
+        traceback.print_exc()
         return {"Message": "Error creating user."}, 400
 
 @bp_user.get('/usuarios', tags=[user_tag])
