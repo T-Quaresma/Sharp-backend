@@ -1,6 +1,6 @@
 from flask_openapi3 import OpenAPI, Info
 from flask_cors import CORS
-from database import db
+from database import db, migrate_schema
 from routes.usuario import bp_user
 from routes.participante import bp_participant
 from routes.atividade import bp_activity
@@ -33,6 +33,7 @@ app.register_api(cep_bp)
 
 with app.app_context():
     db.create_all()
+    migrate_schema()
 
 if __name__ == '__main__':
     app.run(

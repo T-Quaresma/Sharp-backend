@@ -2,7 +2,8 @@ import secrets
 import re
 import unicodedata
 from database import db
-from models import Usuario
+from models import Usuario, Grupo, Atividade, Agendamento, ParticipantesAtiv
+from sqlalchemy import or_
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.exc import IntegrityError
 
@@ -46,7 +47,8 @@ def user_creation(data):
         nomeUsu = data.name,
         email = data.email,
         senha = hashed_password,
-        identificador = identificador
+        identificador = identificador,
+        imagem = data.image
     )
     try:
         db.session.add(new_user)
@@ -59,24 +61,75 @@ def user_creation(data):
 # Searching for a specific user.
 
 def user_search(data):
-    users = db.session.execute(db.select(Usuario).where(Usuario.nomeUsu == data.name)).scalars().all()
-    if not users:
-        return {"Message": "User not found."}
-    user_list = []
-    for user in users:
-        user_list.append({"nomeUsu": user.nomeUsu, "usuId": user.usuId, "email": user.email})
-    return user_list, 200
-
-# User can only delete their own user so it's a direct approach
-
-def user_delete(data):
-    user = db.session.execute(db.select(Usuario).where(Usuario.usuId == data.id)).scalars().first()
+    user = db.session.execute(
+        db.select(Usuario).where(Usuario.identificador == data.identificador)
+    ).scalar_one_or_none()
     if user is None:
-        return {"Message": "User not found."}
-    else:
+        return {"Message": "User not found."}, 404
+    return [{
+        "nomeUsu": user.nomeUsu,
+        "usuId": user.usuId,
+        "email": user.email
+    }], 200
+
+# Load private profile data only for the authenticated account.
+def get_user_profile(user_id):
+    user = db.session.get(Usuario, user_id)
+    if user is None:
+        return {"Message": "User not found."}, 404
+    return {
+        "usuId": user.usuId,
+        "nomeUsu": user.nomeUsu,
+        "email": user.email,
+        "identificador": user.identificador,
+        "imagem": user.imagem
+    }, 200
+
+
+def user_delete(user_id):
+    user = db.session.get(Usuario, user_id)
+    if user is None:
+        return {"Message": "User not found."}, 404
+
+    try:
+        owned_schedule_ids = db.session.execute(
+            db.select(Agendamento.agenId)
+            .join(Atividade, Agendamento.ativId == Atividade.ativId)
+            .where(Atividade.criadorId == user_id)
+        ).scalars().all()
+
+        participant_records = db.session.execute(
+            db.select(ParticipantesAtiv).where(
+                or_(
+                    ParticipantesAtiv.usuId == user_id,
+                    ParticipantesAtiv.agenId.in_(owned_schedule_ids)
+                )
+            )
+        ).scalars().all()
+        for participant in participant_records:
+            db.session.delete(participant)
+
+        owned_groups = db.session.execute(
+            db.select(Grupo).where(Grupo.criadorId == user_id)
+        ).scalars().all()
+        for group in owned_groups:
+            db.session.delete(group)
+
+        db.session.flush()
+
+        owned_activities = db.session.execute(
+            db.select(Atividade).where(Atividade.criadorId == user_id)
+        ).scalars().all()
+        for activity in owned_activities:
+            db.session.delete(activity)
+
         db.session.delete(user)
         db.session.commit()
-        return {"Message": "User deleted successfully."}
+    except Exception:
+        db.session.rollback()
+        raise
+
+    return {"Message": "User deleted successfully."}, 200
 
 def credential_check(data):
     user = db.session.execute(db.select(Usuario).where(Usuario.email == data.email)).scalar_one_or_none()

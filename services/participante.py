@@ -17,22 +17,22 @@ def add_participant(data, user_id):
         return {
             "Message": "You do not have permission to add participants to this schedule."
         }, 403
-    if data.user_id == user_id:
-        return {
-            "Message": "You cannot add yourself as a participant."
-        }, 400
     participant_user = db.session.execute(
         db.select(Usuario).where(
-            Usuario.usuId == data.user_id
+            Usuario.identificador == data.user_id
         )
     ).scalars().first()
     if participant_user is None:
         return {
             "Message": "User not found."
         }, 404
+    if participant_user.usuId == user_id:
+        return {
+            "Message": "You cannot add yourself as a participant."
+        }, 400
     existing_participant = db.session.execute(
         db.select(ParticipantesAtiv).where(
-            ParticipantesAtiv.usuId == data.user_id,
+            ParticipantesAtiv.usuId == participant_user.usuId,
             ParticipantesAtiv.agenId == data.schedule_id
         )
     ).scalars().first()
@@ -42,7 +42,7 @@ def add_participant(data, user_id):
             "status": existing_participant.status
         }, 409
     new_participant = ParticipantesAtiv(
-        usuId=data.user_id,
+        usuId=participant_user.usuId,
         agenId=data.schedule_id,
         status="pending"
     )
@@ -82,7 +82,7 @@ def respond_to_invitation(data, user_id):
         "status": invitation.status
     }, 200
 
-# list all participants of a schedule, only the creator of the schedule can do this
+# list schedule participants for the creator or accepted participants
 
 def select_participant(data, user_id):
     schedule = db.session.execute(
@@ -94,20 +94,33 @@ def select_participant(data, user_id):
         return {
             "Message": "Schedule not found."
         }, 404
-    if schedule.atividade.criadorId != user_id:
-        return {
-            "Message": "You do not have permission to view participants from this schedule."
-        }, 403
-    participants = db.session.execute(
-        db.select(ParticipantesAtiv)
-        .where(
-            ParticipantesAtiv.agenId == data.schedule_id
+    is_creator = schedule.atividade.criadorId == user_id
+    if not is_creator:
+        accepted_membership = db.session.execute(
+            db.select(ParticipantesAtiv).where(
+                ParticipantesAtiv.agenId == data.schedule_id,
+                ParticipantesAtiv.usuId == user_id,
+                ParticipantesAtiv.status == "accepted"
+            )
+        ).scalars().first()
+        if accepted_membership is None:
+            return {
+                "Message": "You do not have permission to view participants from this schedule."
+            }, 403
+
+    participant_query = db.select(ParticipantesAtiv).where(
+        ParticipantesAtiv.agenId == data.schedule_id
+    )
+    if not is_creator:
+        participant_query = participant_query.where(
+            ParticipantesAtiv.status == "accepted"
         )
-    ).scalars().all()
+    participants = db.session.execute(participant_query).scalars().all()
     participant_list = []
     for participant in participants:
         participant_list.append({
             "nomeUsu": participant.usuario.nomeUsu,
+            "imagem": participant.usuario.imagem,
             "usuId": participant.usuario.usuId,
             "partId": participant.partId,
             "status": participant.status
@@ -149,21 +162,36 @@ def delete_participant(data, user_id):
 
 def list_received_invitations(user_id):
     invitations = db.session.execute(
-        db.select(ParticipantesAtiv).where(
-        ParticipantesAtiv.usuId == user_id,
-        ParticipantesAtiv.status == "pending"
+        db.select(ParticipantesAtiv, Agendamento, Atividade, Usuario)
+        .join(
+            Agendamento,
+            ParticipantesAtiv.agenId == Agendamento.agenId
         )
-    ).scalars().all()
+        .join(
+            Atividade,
+            Agendamento.ativId == Atividade.ativId
+        )
+        .join(
+            Usuario,
+            Atividade.criadorId == Usuario.usuId
+        )
+        .where(
+            ParticipantesAtiv.usuId == user_id,
+            ParticipantesAtiv.status == "pending"
+        )
+        .order_by(ParticipantesAtiv.partId)
+    ).all()
 
     invitation_list = []
 
-    for invitation in invitations:
-        schedule = invitation.agendamento
-        activity = schedule.atividade
+    for invitation, schedule, activity, inviter in invitations:
         invitation_list.append({
             "partId": invitation.partId,
             "schedule_id": schedule.agenId,
             "activity_id": activity.ativId,
+            "schedule_name": schedule.nomeAgen,
+            "activity_name": activity.nomeAtiv,
+            "inviter_name": inviter.nomeUsu,
             "status": invitation.status
         })
     return invitation_list, 200

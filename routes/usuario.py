@@ -1,9 +1,8 @@
 from flask_openapi3 import APIBlueprint
-from schemas.usuario import User_Creation, User_Search, User_Delete, User_Auth
-from services.usuario import credential_check, user_creation, user_search, user_delete
+from schemas.usuario import User_Creation, User_Search, User_Auth
+from services.usuario import credential_check, user_creation, user_search, user_delete, get_user_profile
 from tags import user_tag
 from flask import g
-from services.auth import validate_access_token
 from utils.auth import require_auth
 
 bp_user = APIBlueprint("user", __name__)
@@ -27,14 +26,25 @@ def search_user(query: User_Search):
         print(f"Error: {str(e)}")
         return {"Message": "Error searching user."}, 500
     
-@bp_user.delete('/usuario', tags=[user_tag])
-def delete_user(body: User_Delete):
+@bp_user.get('/usuario/me', tags=[user_tag])
+@require_auth
+def current_user():
     try:
-        result = user_delete(body)
-        return result, 200
+        result, status = get_user_profile(g.user["usuId"])
+        return result, status
     except Exception as e:
-        print(f"Error: {str(e)}")
-        return {"Message": "Error deleting the user."}, 400
+        print(f"Error retrieving current user: {str(e)}")
+        return {"Message": "Error retrieving account."}, 500
+
+@bp_user.delete('/usuario', tags=[user_tag])
+@require_auth
+def delete_user():
+    try:
+        result, status = user_delete(g.user["usuId"])
+        return result, status
+    except Exception as e:
+        print(f"Error deleting current user: {str(e)}")
+        return {"Message": "Error deleting account."}, 500
 
 @bp_user.post('/auth/verify', tags=[user_tag])
 def verify_user(body:User_Auth):
@@ -44,4 +54,3 @@ def verify_user(body:User_Auth):
     except Exception as e:
         print(f"Error: {str(e)}")
         return {"Message": "Error verifying the user."}, 500
-

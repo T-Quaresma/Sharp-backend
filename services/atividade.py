@@ -1,5 +1,5 @@
 from database import db
-from models import Atividade, Grupo, Agendamento, ParticipantesAtiv
+from models import Atividade, Grupo, Agendamento, ParticipantesAtiv, Usuario
 
 def create_activity(data, user_id):
     if data.group_id is not None:
@@ -120,7 +120,7 @@ def update_activity(data, user_id):
 
 def list_shared_activities(user_id):
     rows = db.session.execute(
-        db.select(Atividade, Agendamento)
+        db.select(Atividade, Agendamento, Usuario)
         .join(
             Agendamento,
             Agendamento.ativId == Atividade.ativId
@@ -128,6 +128,10 @@ def list_shared_activities(user_id):
         .join(
             ParticipantesAtiv,
             ParticipantesAtiv.agenId == Agendamento.agenId
+        )
+        .join(
+            Usuario,
+            Usuario.usuId == Atividade.criadorId
         )
         .where(
             ParticipantesAtiv.usuId == user_id,
@@ -138,13 +142,15 @@ def list_shared_activities(user_id):
 
     shared_activities = {}
 
-    for activity, schedule in rows:
+    for activity, schedule, creator in rows:
         if activity.ativId not in shared_activities:
             shared_activities[activity.ativId] = {
                 "ativId": activity.ativId,
                 "nomeAtiv": activity.nomeAtiv,
                 "descAtiv": activity.descAtiv,
                 "imagem": activity.imagem,
+                "nomeCriador": creator.nomeUsu,
+                "imagemCriador": creator.imagem,
                 "grupoId": activity.grupoId,
                 "read_only": True,
                 "schedules": []

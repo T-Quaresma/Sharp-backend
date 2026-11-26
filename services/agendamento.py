@@ -1,5 +1,5 @@
 from database import db
-from models import Agendamento, Atividade
+from models import Agendamento, Atividade, Usuario
 
 # creation of a schedule
 
@@ -39,10 +39,14 @@ def create_schedule(data, user_id):
 
 def list_schedules(data, user_id):
     query = (
-        db.select(Agendamento)
+        db.select(Agendamento, Usuario)
         .join(
             Atividade,
             Agendamento.ativId == Atividade.ativId
+        )
+        .join(
+            Usuario,
+            Usuario.usuId == Atividade.criadorId
         )
         .where(
             Atividade.criadorId == user_id
@@ -60,13 +64,14 @@ def list_schedules(data, user_id):
         Agendamento.data_inicio,
         Agendamento.hora_inicio
     )
-    schedules = db.session.execute(
-        query
-    ).scalars().all()
+    schedules = db.session.execute(query).all()
     schedules_list = []
-    for schedule in schedules:
+    for schedule, creator in schedules:
         schedules_list.append({
             "nomeAtiv": schedule.atividade.nomeAtiv,
+            "imagem": schedule.atividade.imagem,
+            "nomeCriador": creator.nomeUsu,
+            "imagemCriador": creator.imagem,
             "ativId": schedule.ativId,
             "nomeAgen": schedule.nomeAgen,
             "data_inicio": schedule.data_inicio,

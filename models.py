@@ -11,6 +11,7 @@ class Usuario(db.Model):
     senha: Mapped[str] = mapped_column(nullable=False)
     nomeUsu: Mapped[str] = mapped_column(nullable=False)
     identificador: Mapped[str] = mapped_column(db.String(30), unique=True, nullable=False)
+    imagem: Mapped[str | None] = mapped_column(nullable=True)
     participantesAtiv: Mapped[List["ParticipantesAtiv"]] = relationship(back_populates="usuario")
 
 class Grupo(db.Model):

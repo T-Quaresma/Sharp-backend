@@ -301,9 +301,10 @@ I-------------------------------------------------------------------------------
 
 **User**
 
-POST | Register a new user  
-GET | Search for a user through their name  
-DELETE | Delete a user
+POST | Register a new user with an optional image
+GET | Search for a user through their exact unique identifier (`identificador` query parameter)
+GET | Get the authenticated user's account details and identification
+DELETE | Delete the authenticated user's account and owned data
 
 **Authentication**
 
@@ -332,7 +333,7 @@ DELETE | Delete a schedule and its related participants
 
 **Participant**
 
-POST | Add a user as a participant to an existing schedule  
+POST | Add a user as a participant to an existing schedule using `user_id` set to the exact identifier (for example, `userone#3414`) and `schedule_id`<br>
 GET | Search for participants registered in a schedule  
 DELETE | Remove a participant from a schedule
 
@@ -354,6 +355,9 @@ Grupo
 Atividade  
 Agendamento  
 ParticipantesAtiv
+
+The `Usuario` entity stores an optional image reference in the `imagem` column.
+On startup, the application migrates existing SQLite databases to this column when needed.
 
 **Relationship structure:**
 
