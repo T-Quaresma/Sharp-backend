@@ -1,6 +1,4 @@
-# agenda-compartilhada-backend (SHARP)
-
-Repositorio criado para o desenvolvimento da API principal do projeto SHARP - MVP Full Stack.
+# SHARP
 
 ## Title: SHARP
 
@@ -14,6 +12,19 @@ Allows users to create activities, add schedules and share them with other users
 Activities can be organized into groups, and schedules support date, time, location and frequency settings.
 
 The API uses the SHARP Authentication API for authentication and authorization and communicates with the ViaCEP external API to retrieve address information from Brazilian postal codes.
+
+I------------------------------------------------------------------------------------------I
+
+## About SHARP
+
+This repository contains the Principal API of SHARP,
+responsible for the application's core business logic,
+database management, and access control.
+
+For the complete project overview, architecture, demonstration,
+screenshots, and related repositories, visit:
+
+**[SHARP — Main Project Repository](https://github.com/T-Quaresma/sharp)**
 
 I------------------------------------------------------------------------------------------I
 
