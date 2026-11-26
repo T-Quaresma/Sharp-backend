@@ -209,13 +209,14 @@ This volume keeps the SQLite database even if the Principal API container is sto
 
 Using Git Bash on Windows:
 
-docker run -d --name sharp-principal \
+docker run -d \
+  --name sharp-principal \
   --network sharp-network \
   -p 5000:5000 \
   -e AUTH_API_URL=http://sharp-auth:5001 \
   -v sharp-database:/app/instance \
   sharp-principal
-
+  
 or
 
  docker run -d --name sharp-principal --network sharp-network -p 5000:5000 -e AUTH_API_URL=http://sharp-auth:5001 -v sharp-database:/app/instance sharp-principal     
